@@ -2324,7 +2324,8 @@ void BulkData::internal_declare_relation( Entity e_from ,
     // Deduce and set new part memberships:
     scratch1.clear();
 
-    impl::get_part_ordinals_to_induce_on_lower_ranks(*this, e_from, entity_rank(e_to), scratch1);
+    const Bucket& bucketFrom = bucket(e_from);
+    impl::get_part_ordinals_to_induce_on_lower_ranks(*this, bucketFrom, entity_rank(e_to), scratch1);
 
     OrdinalVector emptyParts;
     internal_change_entity_parts(e_to, scratch1, emptyParts, scratch2, scratch3);
@@ -2404,20 +2405,24 @@ bool BulkData::internal_destroy_relation( Entity e_from ,
     // For all relations that are *not* being deleted, add induced parts for
     // these relations to the 'keep' vector
     {
-      Entity const* rel_entities = nullptr;
-      ConnectivityOrdinal const* rel_ordinals = nullptr;
-      int num_rels = 0;
       for (EntityRank irank = static_cast<EntityRank>(e_to_entity_rank + 1); irank < end_rank; ++irank) {
-        num_rels     = num_connectivity(e_to, irank);
-        rel_entities = begin(e_to, irank);
-        rel_ordinals = begin_ordinals(e_to, irank);
+        int num_rels = num_connectivity(e_to, irank);
+        if (num_rels > 0) {
+          const Entity* rel_entities = begin(e_to, irank);
+          const ConnectivityOrdinal* rel_ordinals = begin_ordinals(e_to, irank);
 
-        for (int j = 0; j < num_rels; ++j) {
-          ThrowAssertMsg(is_valid(rel_entities[j]), "Error, entity " << e_to.local_offset() << " with key " << entity_key(e_to) << " has invalid back-relation for ordinal: "
-                         << (uint32_t)rel_ordinals[j] << " to rank: " << irank << ", target entity is: " << rel_entities[j].local_offset());
-          if ( !(rel_entities[j] == e_from && rel_ordinals[j] == static_cast<ConnectivityOrdinal>(local_id) ) )
-          {
-            impl::get_part_ordinals_to_induce_on_lower_ranks(*this, rel_entities[j], e_to_entity_rank, keep);
+          const Bucket* prevBucketPtr = nullptr;
+          for (int j = 0; j < num_rels; ++j) {
+            ThrowAssertMsg(is_valid(rel_entities[j]), "Error, entity " << e_to.local_offset() << " with key " << entity_key(e_to) << " has invalid back-relation for ordinal: "
+                           << (uint32_t)rel_ordinals[j] << " to rank: " << irank << ", target entity is: " << rel_entities[j].local_offset());
+            if ( !(rel_entities[j] == e_from && rel_ordinals[j] == static_cast<ConnectivityOrdinal>(local_id) ) )
+            {
+              const Bucket* curBucketPtr = bucket_ptr(rel_entities[j]);
+              if (prevBucketPtr != curBucketPtr) {
+                prevBucketPtr = curBucketPtr;
+                impl::get_part_ordinals_to_induce_on_lower_ranks(*this, *curBucketPtr, e_to_entity_rank, keep);
+              }
+            }
           }
         }
       }
@@ -2433,7 +2438,7 @@ bool BulkData::internal_destroy_relation( Entity e_from ,
       {
         if ( rel_entities[j] == e_to && rel_ordinals[j] == static_cast<ConnectivityOrdinal>(local_id) )
         {
-          impl::get_part_ordinals_to_induce_on_lower_ranks_except_for_omits(*this, e_from, keep, e_to_entity_rank, del);
+          impl::get_part_ordinals_to_induce_on_lower_ranks_except_for_omits(*this, bucket(e_from), keep, e_to_entity_rank, del);
           break; // at most 1 relation can match our specification
         }
       }
@@ -5800,10 +5805,14 @@ void BulkData::internal_insert_all_parts_induced_from_higher_rank_entities_to_ve
 
         for (int k = 0; k < num_upward_rels; ++k)
         {
+            const Bucket* prevBucketPtr = nullptr;
             if (entity != upward_rel_entities[k])  // Already did this entity
             {
-                // Relation from to_rel->entity() to e_to
-                impl::get_part_ordinals_to_induce_on_lower_ranks(*this, upward_rel_entities[k], e_to_rank, to_add );
+              const Bucket* curBucketPtr = bucket_ptr(upward_rel_entities[k]);
+              if (prevBucketPtr != curBucketPtr) {
+                prevBucketPtr = curBucketPtr;
+                impl::get_part_ordinals_to_induce_on_lower_ranks(*this, *curBucketPtr, e_to_rank, to_add );
+              }
             }
         }
     }
