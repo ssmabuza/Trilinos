@@ -14,6 +14,7 @@
 
 #include "Teuchos_UnitTestHarness.hpp"
 
+#include "Intrepid2_BernsteinBasisFamily.hpp"
 #include "Intrepid2_HierarchicalBasisFamily.hpp"
 #include "Intrepid2_NodalBasisFamily.hpp"
 #include "Intrepid2_Types.hpp"
@@ -85,6 +86,40 @@ namespace
       CGBasis cgBasis(polyOrder);
       DGBasis dgBasis(polyOrder);
       BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(cgBasis, dgBasis, opsToTest, relTol, absTol, out, success);
+    }
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, LineBernsteinVersusNodalCG_HGRAD )
+  {
+    using BernsteinBasis = BernsteinBasisFamily<DefaultTestDeviceType>::HGRAD_LINE;
+    using NodalBasis     = NodalBasisFamily<DefaultTestDeviceType>::HGRAD_LINE;
+
+    std::vector<EOperator> opsToTest {OPERATOR_GRAD, OPERATOR_D1, OPERATOR_D2, OPERATOR_D3, OPERATOR_D4, OPERATOR_D5};
+    const double relTol = 1e-12;
+    const double absTol = 1e-12;
+
+    for (int polyOrder = 1; polyOrder <= 5; polyOrder++)
+    {
+      BernsteinBasis bernsteinBasis(polyOrder);
+      NodalBasis     nodalBasis(polyOrder);
+      BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(bernsteinBasis, nodalBasis, opsToTest, relTol, absTol, out, success);
+    }
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, LineBernsteinVersusHierarchical_HVOL )
+  {
+    using BernsteinBasis    = BernsteinBasisFamily<DefaultTestDeviceType>::HVOL_LINE;
+    using HierarchicalBasis = HierarchicalBasisFamily<DefaultTestDeviceType>::HVOL_LINE;
+
+    std::vector<EOperator> opsToTest {OPERATOR_VALUE};
+    const double relTol = 1e-12;
+    const double absTol = 1e-12;
+
+    for (int polyOrder = 0; polyOrder <= 5; polyOrder++)
+    {
+      BernsteinBasis    bernsteinBasis(polyOrder);
+      HierarchicalBasis hierarchicalBasis(polyOrder);
+      BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(bernsteinBasis, hierarchicalBasis, opsToTest, relTol, absTol, out, success);
     }
   }
 } // namespace

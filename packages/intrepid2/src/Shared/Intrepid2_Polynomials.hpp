@@ -15,6 +15,9 @@
 #ifndef Intrepid2_Polynomials_h
 #define Intrepid2_Polynomials_h
 
+#include <cstdint>
+#include <type_traits>
+
 #include "Intrepid2_Polylib.hpp"
 #include "Intrepid2_Types.hpp"
 #include "Intrepid2_Utils.hpp"
@@ -559,6 +562,179 @@ namespace Intrepid2
         P_i_minus_1 = outputValues(i);
         
         outputValues(i) = L_i_dt;
+      }
+    }
+
+    /** \brief  Compute binomial coefficient C(n, k) without factorial overflow.
+        \param [in] n - total count
+        \param [in] k - selection count
+        \return C(n, k) as a double, or 0.0 when k < 0 or k > n.
+     */
+    KOKKOS_INLINE_FUNCTION double binomialCoefficient(Intrepid2::ordinal_type n, Intrepid2::ordinal_type k)
+    {
+      if (k < 0 || k > n) return 0.0;
+      if (k == 0 || k == n) return 1.0;
+      if (k > n - k) k = n - k;
+      if (n <= 61)
+      {
+        std::uint64_t c = 1;
+        for (Intrepid2::ordinal_type i = 1; i <= k; ++i)
+        {
+          c = (c * static_cast<std::uint64_t>(n - k + i)) / static_cast<std::uint64_t>(i);
+        }
+        return static_cast<double>(c);
+      }
+      double c = 1.0;
+      for (Intrepid2::ordinal_type i = 1; i <= k; ++i)
+      {
+        c = (c * static_cast<double>(n - k + i)) / static_cast<double>(i);
+      }
+      return c;
+    }
+
+    /** \brief  Evaluate shifted Bernstein polynomials B_{i,n}(t) = C(n,i) (1-t)^{n-i} t^i for i=0..n at t in [0,1].
+        \param [out] outputValues - view into which to place the output values (must have at least n+1 entries)
+        \param [in]  n            - polynomial degree
+        \param [in]  t            - evaluation point in [0,1]
+     */
+    template<typename OutputValueViewType, typename ScalarType>
+    KOKKOS_INLINE_FUNCTION void shiftedBernsteinValues(OutputValueViewType outputValues, Intrepid2::ordinal_type n, ScalarType t)
+    {
+      using OutputScalar = typename std::remove_const<typename OutputValueViewType::value_type>::type;
+      const OutputScalar t_val = t;
+      const OutputScalar s_val = 1.0 - t_val;
+      if (n >= 0) outputValues(0) = 1.0;
+      for (Intrepid2::ordinal_type m = 1; m <= n; ++m)
+      {
+        outputValues(m) = t_val * outputValues(m - 1);
+        for (Intrepid2::ordinal_type i = m - 1; i >= 1; --i)
+        {
+          outputValues(i) = s_val * outputValues(i) + t_val * outputValues(i - 1);
+        }
+        outputValues(0) = s_val * outputValues(0);
+      }
+    }
+
+    /** \brief  Evaluate Bernstein polynomials on [-1,1] at x, defined via t = (1+x)/2 in [0,1].
+        \param [out] outputValues - view into which to place the output values (must have at least n+1 entries)
+        \param [in]  n            - polynomial degree
+        \param [in]  x            - evaluation point in [-1,1]
+     */
+    template<typename OutputValueViewType, typename ScalarType>
+    KOKKOS_INLINE_FUNCTION void bernsteinValues(OutputValueViewType outputValues, Intrepid2::ordinal_type n, ScalarType x)
+    {
+      using OutputScalar = typename std::remove_const<typename OutputValueViewType::value_type>::type;
+      const OutputScalar t_val = 0.5 * (1.0 + x);
+      const OutputScalar s_val = 0.5 * (1.0 - x);
+      if (n >= 0) outputValues(0) = 1.0;
+      for (Intrepid2::ordinal_type m = 1; m <= n; ++m)
+      {
+        outputValues(m) = t_val * outputValues(m - 1);
+        for (Intrepid2::ordinal_type i = m - 1; i >= 1; --i)
+        {
+          outputValues(i) = s_val * outputValues(i) + t_val * outputValues(i - 1);
+        }
+        outputValues(0) = s_val * outputValues(0);
+      }
+    }
+
+    /** \brief  Evaluate the dn-th derivative of shifted Bernstein polynomials B_{i,n}(t) on [0,1].
+        \param [out] outputValues - view into which to place the output values (must have at least n+1 entries)
+        \param [in]  n            - polynomial degree
+        \param [in]  t            - evaluation point in [0,1]
+        \param [in]  dn           - derivative order (dn >= 0)
+     */
+    template<typename OutputValueViewType, typename ScalarType>
+    KOKKOS_INLINE_FUNCTION void shiftedBernsteinDerivativeValues(OutputValueViewType outputValues,
+                                                                 Intrepid2::ordinal_type n,
+                                                                 ScalarType t,
+                                                                 Intrepid2::ordinal_type dn)
+    {
+      if (dn <= 0)
+      {
+        shiftedBernsteinValues(outputValues, n, t);
+        return;
+      }
+      if (dn > n)
+      {
+        for (Intrepid2::ordinal_type i = 0; i <= n; ++i)
+        {
+          outputValues(i) = 0.0;
+        }
+        return;
+      }
+      using OutputScalar = typename std::remove_const<typename OutputValueViewType::value_type>::type;
+      const Intrepid2::ordinal_type q = n - dn;
+      shiftedBernsteinValues(outputValues, q, t);
+
+      double scale = 1.0;
+      for (Intrepid2::ordinal_type m = 0; m < dn; ++m)
+      {
+        scale *= static_cast<double>(n - m);
+      }
+
+      for (Intrepid2::ordinal_type i = n; i >= 0; --i)
+      {
+        const Intrepid2::ordinal_type r_min = (i - q > 0) ? (i - q) : 0;
+        const Intrepid2::ordinal_type r_max = (i < dn) ? i : dn;
+        OutputScalar sum = 0.0;
+        for (Intrepid2::ordinal_type r = r_min; r <= r_max; ++r)
+        {
+          const double sign = ((dn - r) % 2 == 0) ? 1.0 : -1.0;
+          const double binom = binomialCoefficient(dn, r);
+          sum += (sign * binom) * outputValues(i - r);
+        }
+        outputValues(i) = scale * sum;
+      }
+    }
+
+    /** \brief  Evaluate the dn-th derivative of Bernstein polynomials on [-1,1] with respect to x.
+        \param [out] outputValues - view into which to place the output values (must have at least n+1 entries)
+        \param [in]  n            - polynomial degree
+        \param [in]  x            - evaluation point in [-1,1]
+        \param [in]  dn           - derivative order (dn >= 0)
+     */
+    template<typename OutputValueViewType, typename ScalarType>
+    KOKKOS_INLINE_FUNCTION void bernsteinDerivativeValues(OutputValueViewType outputValues,
+                                                          Intrepid2::ordinal_type n,
+                                                          ScalarType x,
+                                                          Intrepid2::ordinal_type dn)
+    {
+      if (dn <= 0)
+      {
+        bernsteinValues(outputValues, n, x);
+        return;
+      }
+      if (dn > n)
+      {
+        for (Intrepid2::ordinal_type i = 0; i <= n; ++i)
+        {
+          outputValues(i) = 0.0;
+        }
+        return;
+      }
+      using OutputScalar = typename std::remove_const<typename OutputValueViewType::value_type>::type;
+      const Intrepid2::ordinal_type q = n - dn;
+      bernsteinValues(outputValues, q, x);
+
+      double scale = 1.0;
+      for (Intrepid2::ordinal_type m = 0; m < dn; ++m)
+      {
+        scale *= 0.5 * static_cast<double>(n - m);
+      }
+
+      for (Intrepid2::ordinal_type i = n; i >= 0; --i)
+      {
+        const Intrepid2::ordinal_type r_min = (i - q > 0) ? (i - q) : 0;
+        const Intrepid2::ordinal_type r_max = (i < dn) ? i : dn;
+        OutputScalar sum = 0.0;
+        for (Intrepid2::ordinal_type r = r_min; r <= r_max; ++r)
+        {
+          const double sign = ((dn - r) % 2 == 0) ? 1.0 : -1.0;
+          const double binom = binomialCoefficient(dn, r);
+          sum += (sign * binom) * outputValues(i - r);
+        }
+        outputValues(i) = scale * sum;
       }
     }
   } // namespace Polynomials

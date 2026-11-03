@@ -16,6 +16,7 @@
 
 #include "Intrepid2_DefaultCubatureFactory.hpp"
 #include "Intrepid2_FunctionSpaceTools.hpp"
+#include "Intrepid2_BernsteinBasisFamily.hpp"
 #include "Intrepid2_HierarchicalBasisFamily.hpp"
 #include "Intrepid2_NodalBasisFamily.hpp"
 #include "Intrepid2_Types.hpp"
@@ -145,5 +146,22 @@ namespace
     CnBasis cnBasis(polyOrder);
     C2Basis c2Basis;
     BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(cnBasis, c2Basis, opsToTest, relTol, absTol, out, success);
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, HexahedronBernsteinVersusNodalCG_HGRAD )
+  {
+    using BernsteinBasis = BernsteinBasisFamily<DefaultTestDeviceType>::HGRAD_HEX;
+    using NodalBasis     = NodalBasisFamily<DefaultTestDeviceType>::HGRAD_HEX;
+
+    std::vector<EOperator> opsToTest {OPERATOR_GRAD, OPERATOR_D1, OPERATOR_D2};
+    const double relTol = 1e-11;
+    const double absTol = 1e-11;
+
+    for (int polyOrder = 1; polyOrder <= 3; polyOrder++)
+    {
+      BernsteinBasis bernsteinBasis(polyOrder);
+      NodalBasis     nodalBasis(polyOrder);
+      BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(bernsteinBasis, nodalBasis, opsToTest, relTol, absTol, out, success);
+    }
   }
 } // namespace

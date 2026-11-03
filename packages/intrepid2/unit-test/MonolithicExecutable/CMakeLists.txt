@@ -73,6 +73,7 @@ SET( TestGroups
   BasisCardinality
   BasisOpDecomposition
   BasisValues
+  BernsteinBasis
   CellGeometry
   CubatureTensor
   Data
@@ -159,4 +160,10 @@ ENDIF()
 TRIBITS_ADD_EXECUTABLE( SubBasisInclusionTests NOEXESUFFIX SOURCES SubBasisInclusionTests.cpp UnitTestMain.cpp )
 IF (TARGET Intrepid2_SubBasisInclusionTests)
   SET_TARGET_PROPERTIES( Intrepid2_SubBasisInclusionTests PROPERTIES EXCLUDE_FROM_ALL TRUE)
+ENDIF()
+
+# BernsteinBasisTests
+TRIBITS_ADD_EXECUTABLE( BernsteinBasisTests NOEXESUFFIX SOURCES BernsteinBasisTests.cpp UnitTestMain.cpp )
+IF (TARGET Intrepid2_BernsteinBasisTests)
+  SET_TARGET_PROPERTIES( Intrepid2_BernsteinBasisTests PROPERTIES EXCLUDE_FROM_ALL TRUE)
 ENDIF()
