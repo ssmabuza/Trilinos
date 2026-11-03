@@ -16,6 +16,7 @@
 
 #include "Intrepid2_DefaultCubatureFactory.hpp"
 #include "Intrepid2_FunctionSpaceTools.hpp"
+#include "Intrepid2_BernsteinBasisFamily.hpp"
 #include "Intrepid2_HierarchicalBasisFamily.hpp"
 #include "Intrepid2_NodalBasisFamily.hpp"
 #include "Intrepid2_Types.hpp"
@@ -269,6 +270,52 @@ namespace
         auto hierarchicalBasis = getHypercubeBasis_HVOL<HierarchicalBasisFamily>(polyDegree, spaceDim);
         auto nodalBasis        = getHypercubeBasis_HVOL<NodalBasisFamily>(polyDegree, spaceDim);
         BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(*nodalBasis, *hierarchicalBasis, opsToTest, relTol, absTol, out, success);
+      }
+    }
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, HypercubeBernsteinVersusHypercubeHierarchical_HGRAD_LowD )
+  {
+    const int maxSpaceDim = 4;
+    const int maxDegree   = 2;
+
+    using HierarchicalFamily = HierarchicalBasisFamily<DefaultTestDeviceType>;
+    using BernsteinFamily    = BernsteinBasisFamily<DefaultTestDeviceType>;
+
+    std::vector<EOperator> opsToTest {OPERATOR_VALUE, OPERATOR_GRAD};
+    const double relTol = 1e-12;
+    const double absTol = 1e-12;
+
+    for (int polyDegree = 1; polyDegree <= maxDegree; polyDegree++)
+    {
+      for (int spaceDim = 1; spaceDim <= maxSpaceDim; spaceDim++)
+      {
+        auto hierarchicalBasis = getHypercubeBasis_HGRAD<HierarchicalFamily>(polyDegree, spaceDim);
+        auto bernsteinBasis    = getHypercubeBasis_HGRAD<BernsteinFamily>(polyDegree, spaceDim);
+        BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(*bernsteinBasis, *hierarchicalBasis, opsToTest, relTol, absTol, out, success);
+      }
+    }
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, HypercubeBernsteinVersusHypercubeHierarchical_HVOL )
+  {
+    const int maxSpaceDim = 4;
+    const int maxDegree   = 2;
+
+    using HierarchicalFamily = HierarchicalBasisFamily<DefaultTestDeviceType>;
+    using BernsteinFamily    = BernsteinBasisFamily<DefaultTestDeviceType>;
+
+    std::vector<EOperator> opsToTest {OPERATOR_VALUE};
+    const double relTol = 1e-11;
+    const double absTol = 1e-11;
+
+    for (int polyDegree = 0; polyDegree <= maxDegree; polyDegree++)
+    {
+      for (int spaceDim = 1; spaceDim <= maxSpaceDim; spaceDim++)
+      {
+        auto hierarchicalBasis = getHypercubeBasis_HVOL<HierarchicalFamily>(polyDegree, spaceDim);
+        auto bernsteinBasis    = getHypercubeBasis_HVOL<BernsteinFamily>(polyDegree, spaceDim);
+        BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(*bernsteinBasis, *hierarchicalBasis, opsToTest, relTol, absTol, out, success);
       }
     }
   }

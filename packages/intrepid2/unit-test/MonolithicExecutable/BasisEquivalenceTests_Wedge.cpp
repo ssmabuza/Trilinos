@@ -22,6 +22,7 @@
 
 #include "Intrepid2_HGRAD_WEDGE_C2_FEM.hpp"
 
+#include "Intrepid2_BernsteinBasisFamily.hpp"
 #include "Intrepid2_HierarchicalBasisFamily.hpp"
 #include "Intrepid2_NodalBasisFamily.hpp"
 #include "Intrepid2_TestUtils.hpp"
@@ -219,6 +220,40 @@ namespace
       HierarchicalBasis hierarchicalBasis(polyOrder);
       NodalBasis        nodalBasis(polyOrder);
       BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(nodalBasis, hierarchicalBasis, opsToTest, relTol, absTol, out, success);
+    }
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, WedgeBernsteinVersusHierarchical_HGRAD )
+  {
+    using BernsteinBasis    = BernsteinBasisFamily<DefaultTestDeviceType>::HGRAD_WEDGE;
+    using HierarchicalBasis = HierarchicalBasisFamily<DefaultTestDeviceType>::HGRAD_WEDGE;
+
+    std::vector<EOperator> opsToTest {OPERATOR_GRAD, OPERATOR_D1};
+    const double relTol = 1e-10;
+    const double absTol = 1e-10;
+
+    for (ordinal_type polyOrder = 1; polyOrder <= 4; polyOrder++)
+    {
+      BernsteinBasis    bernsteinBasis(polyOrder);
+      HierarchicalBasis hierarchicalBasis(polyOrder);
+      BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(bernsteinBasis, hierarchicalBasis, opsToTest, relTol, absTol, out, success);
+    }
+  }
+
+  TEUCHOS_UNIT_TEST( BasisEquivalence, WedgeBernsteinVersusHierarchical_HVOL )
+  {
+    using BernsteinBasis    = BernsteinBasisFamily<DefaultTestDeviceType>::HVOL_WEDGE;
+    using HierarchicalBasis = HierarchicalBasisFamily<DefaultTestDeviceType>::HVOL_WEDGE;
+
+    std::vector<EOperator> opsToTest {OPERATOR_VALUE};
+    const double relTol = 1e-10;
+    const double absTol = 1e-10;
+
+    for (ordinal_type polyOrder = 0; polyOrder <= 4; polyOrder++)
+    {
+      BernsteinBasis    bernsteinBasis(polyOrder);
+      HierarchicalBasis hierarchicalBasis(polyOrder);
+      BasisEquivalenceHelpers::testBasisEquivalence<DefaultTestDeviceType>(bernsteinBasis, hierarchicalBasis, opsToTest, relTol, absTol, out, success);
     }
   }
 } // namespace
