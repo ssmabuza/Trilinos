@@ -51,18 +51,6 @@ endif()
     NOINSTALLHEADERS ${HEADERS} ${HEADERS_SPMD}
     SOURCES ${SOURCES} ${SOURCES_SPMD}
   )
-
-  if (TPL_LAPACK_LIBRARIES)
-    message("STKTransferUtil: TPL_LAPACK_LIBRARIES already set, don't need to find_package.")
-    target_link_libraries(stk_transfer_util PUBLIC ${TPL_LAPACK_LIBRARIES})
-  else()
-    find_package(LAPACK REQUIRED)
-    if (TARGET LAPACK::LAPACK)
-      target_link_libraries(stk_transfer_util PUBLIC LAPACK::LAPACK)
-    else()
-      target_link_libraries(stk_transfer_util PUBLIC ${LAPACK_LIBRARIES})
-    endif()
-  endif()
 else()
   add_library(stk_transfer_util ${SOURCES} ${SOURCES_SPMD})
   target_link_libraries(stk_transfer_util PUBLIC stk_transfer_lib)
@@ -81,12 +69,23 @@ else()
     target_link_libraries(stk_transfer_util PUBLIC ${BLAS_LIBRARIES})
   endif()
 
-  target_include_directories(stk_transfer_util PUBLIC
-   $<BUILD_INTERFACE:${STK_TOPLEVEL_SOURCE_DIR}/stk_transfer_util>
-   $<INSTALL_INTERFACE:include>
-  )
-  INSTALL(TARGETS stk_transfer_util EXPORT stkTargets DESTINATION ${STK_INSTALL_LIBDIR})
+  if (STK_HAS_YAML_CPP)
+    if (TARGET yaml-cpp)
+      target_link_libraries(stk_transfer_util PRIVATE yaml-cpp)
+    elseif(TARGET yaml-cpp::yaml-cpp)
+      target_link_libraries(stk_transfer_util PRIVATE yaml-cpp::yaml-cpp)
+    elseif(YAML_CPP_LIBRARIES)
+      target_link_libraries(stk_transfer_util PRIVATE ${YAML_CPP_LIBRARIES})
+    endif()
+  endif()
 endif()
+
+target_include_directories(stk_transfer_util PUBLIC
+ $<BUILD_INTERFACE:${STK_TOPLEVEL_SOURCE_DIR}/stk_transfer_util>
+ $<INSTALL_INTERFACE:include>
+)
+
+INSTALL(TARGETS stk_transfer_util EXPORT stkTargets DESTINATION ${STK_INSTALL_LIBDIR})
 
 INSTALL(FILES ${HEADERS} DESTINATION
     ${${PROJECT_NAME}_INSTALL_INCLUDE_DIR}/stk_transfer_util)
