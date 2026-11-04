@@ -78,10 +78,20 @@ DOF(const PHX::FieldTag & input,
   , id_(id)
   , dof_basis(input)
 {
-  TEUCHOS_ASSERT(bd.getType()=="HGrad" || bd.getType()=="HCurl" ||
-                 bd.getType()=="HDiv" || bd.getType()=="Const")
+  TEUCHOS_ASSERT(bd.getType()=="HGrad" || bd.getType()=="HGrad_Bernstein" ||
+                 bd.getType()=="Bernstein" || bd.getType()=="HGrad:Bernstein" ||
+                 bd.getType()=="HCurl" || bd.getType()=="HCurl_Bernstein" ||
+                 bd.getType()=="HCurl:Bernstein" ||
+                 bd.getType()=="HDiv" || bd.getType()=="HDiv_Bernstein" ||
+                 bd.getType()=="HDiv:Bernstein" ||
+                 bd.getType()=="HVol" || bd.getType()=="HVol_Bernstein" ||
+                 bd.getType()=="HVol:Bernstein" || bd.getType()=="DG_Bernstein" ||
+                 bd.getType()=="Const")
 
-  is_vector_basis = (bd.getType()=="HCurl" || bd.getType()=="HDiv");
+  is_vector_basis = (bd.getType()=="HCurl" || bd.getType()=="HCurl_Bernstein" ||
+                     bd.getType()=="HCurl:Bernstein" ||
+                     bd.getType()=="HDiv" || bd.getType()=="HDiv_Bernstein" ||
+                     bd.getType()=="HDiv:Bernstein");
 
   // swap between scalar basis value, or vector basis value
   if(not is_vector_basis) {
@@ -224,12 +234,22 @@ DOF(const PHX::FieldTag & input,
   , id_(id)
   , dof_basis(input)
 {
-  TEUCHOS_ASSERT(bd.getType()=="HGrad" || bd.getType()=="HCurl" ||
-                 bd.getType()=="HDiv" || bd.getType()=="Const")
+  TEUCHOS_ASSERT(bd.getType()=="HGrad" || bd.getType()=="HGrad_Bernstein" ||
+                 bd.getType()=="Bernstein" || bd.getType()=="HGrad:Bernstein" ||
+                 bd.getType()=="HCurl" || bd.getType()=="HCurl_Bernstein" ||
+                 bd.getType()=="HCurl:Bernstein" ||
+                 bd.getType()=="HDiv" || bd.getType()=="HDiv_Bernstein" ||
+                 bd.getType()=="HDiv:Bernstein" ||
+                 bd.getType()=="HVol" || bd.getType()=="HVol_Bernstein" ||
+                 bd.getType()=="HVol:Bernstein" || bd.getType()=="DG_Bernstein" ||
+                 bd.getType()=="Const")
 
   accelerate_jacobian_enabled = false; // don't short cut for identity matrix
 
-  is_vector_basis = (bd.getType()=="HCurl" || bd.getType()=="HDiv");
+  is_vector_basis = (bd.getType()=="HCurl" || bd.getType()=="HCurl_Bernstein" ||
+                     bd.getType()=="HCurl:Bernstein" ||
+                     bd.getType()=="HDiv" || bd.getType()=="HDiv_Bernstein" ||
+                     bd.getType()=="HDiv:Bernstein");
 
   // swap between scalar basis value, or vector basis value
   if(not is_vector_basis) {

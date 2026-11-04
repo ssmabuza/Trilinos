@@ -61,4 +61,28 @@ namespace panzer {
     TEST_NOTHROW(eq_set = my_factory.buildEquationSet(p, default_integration_order, cell_data, global_data, true));
   }
 
+  TEUCHOS_UNIT_TEST(equation_set, bernstein_basis)
+  {
+    Teuchos::RCP<Teuchos::ParameterList> p = Teuchos::parameterList();
+    p->set("Type","Energy");
+    p->set("Prefix","ION_");
+    p->set("Model ID","solid");
+    p->set("Basis Type","HGrad_Bernstein");
+    p->set("Basis Order",2);
+
+    int default_integration_order = 4;
+    int num_cells = 20;
+    panzer::CellData quad_cell_data(num_cells,
+                        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Quadrilateral<4> >())));
+    panzer::CellData tri_cell_data(num_cells,
+                        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Triangle<3> >())));
+
+    Teuchos::RCP<panzer::EquationSet_TemplateManager<panzer::Traits> > eq_set;
+
+    user_app::MyFactory my_factory;
+    Teuchos::RCP<panzer::GlobalData> global_data = panzer::createGlobalData();
+    TEST_NOTHROW(eq_set = my_factory.buildEquationSet(p, default_integration_order, quad_cell_data, global_data, false));
+    TEST_NOTHROW(eq_set = my_factory.buildEquationSet(p, default_integration_order, tri_cell_data, global_data, false));
+  }
+
 }

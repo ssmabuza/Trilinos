@@ -145,7 +145,11 @@ namespace panzer
 
     // Ensure the input makes sense.
     TEUCHOS_TEST_FOR_EXCEPTION(not ((bd_.getType() == "HCurl") or
-      (bd_.getType() == "HDiv")), logic_error, "Error:  "                     \
+      (bd_.getType() == "HCurl_Bernstein") or
+      (bd_.getType() == "HCurl:Bernstein") or
+      (bd_.getType() == "HDiv") or
+      (bd_.getType() == "HDiv_Bernstein") or
+      (bd_.getType() == "HDiv:Bernstein")), logic_error, "Error:  "           \
       "Integrator_BasisTimesVector:  Basis of type \"" << bd_.getType()
       << "\" is not a vector basis.")
 

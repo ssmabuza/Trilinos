@@ -16,6 +16,8 @@
 #include "Panzer_CellData.hpp"
 #include "Panzer_IntegrationRule.hpp"
 #include "Panzer_BasisIRLayout.hpp"
+#include "Panzer_BasisDescriptor.hpp"
+#include "Panzer_PointGenerator.hpp"
 
 namespace panzer {
 
@@ -244,6 +246,168 @@ namespace panzer {
       TEST_EQUALITY(basis->getElementSpace(),PureBasis::HGRAD);
     }
 
+  }
+
+  TEUCHOS_UNIT_TEST(basis, bernstein_bases)
+  {
+    const int num_cells = 10;
+    Teuchos::RCP<PureBasis> basis;
+
+    // Line (HGrad_Bernstein, Bernstein, HVol_Bernstein)
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Line<2> >()));
+      const panzer::CellData cell_data(num_cells, topo);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 3, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:3");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 4);
+      TEST_EQUALITY(basis->requiresOrientations(), false);
+
+      basis = Teuchos::rcp(new PureBasis("Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 3);
+
+      basis = Teuchos::rcp(new PureBasis("HVol_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HVol_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HVOL);
+      TEST_EQUALITY(basis->cardinality(), 3);
+    }
+
+    // Triangle (HGrad_Bernstein, HVol_Bernstein)
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Triangle<3> >()));
+      const panzer::CellData cell_data(num_cells, topo);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 3, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:3");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 10);
+      TEST_ASSERT(basis->requiresOrientations());
+
+      basis = Teuchos::rcp(new PureBasis("HVol_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HVol_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HVOL);
+      TEST_EQUALITY(basis->cardinality(), 6);
+    }
+
+    // Quadrilateral (HGrad_Bernstein, HVol_Bernstein, HCurl_Bernstein, HDiv_Bernstein)
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Quadrilateral<4> >()));
+      const panzer::CellData cell_data(num_cells, topo);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 9);
+      TEST_EQUALITY(basis->requiresOrientations(), false);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 3, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:3");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 16);
+      TEST_EQUALITY(basis->requiresOrientations(), true);
+
+      basis = Teuchos::rcp(new PureBasis("HVol_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HVol_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HVOL);
+      TEST_EQUALITY(basis->cardinality(), 9);
+
+      basis = Teuchos::rcp(new PureBasis("HCurl_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HCurl_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HCURL);
+      TEST_EQUALITY(basis->cardinality(), 12);
+
+      basis = Teuchos::rcp(new PureBasis("HDiv_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HDiv_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HDIV);
+      TEST_EQUALITY(basis->cardinality(), 12);
+
+      // BasisDescriptor + PointDescriptor check
+      panzer::BasisDescriptor bd(2, "HGrad_Bernstein");
+      auto pd = bd.getPointDescriptor();
+      TEST_EQUALITY(pd.getGenerator().numPoints(*topo), 9);
+    }
+
+    // Tetrahedron (HGrad_Bernstein, HVol_Bernstein)
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Tetrahedron<4> >()));
+      const panzer::CellData cell_data(num_cells, topo);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 3, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:3");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 20);
+      TEST_ASSERT(basis->requiresOrientations());
+
+      basis = Teuchos::rcp(new PureBasis("HVol_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HVol_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HVOL);
+      TEST_EQUALITY(basis->cardinality(), 10);
+    }
+
+    // Hexahedron (HGrad_Bernstein, HVol_Bernstein, HCurl_Bernstein, HDiv_Bernstein)
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Hexahedron<8> >()));
+      const panzer::CellData cell_data(num_cells, topo);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 27);
+      TEST_EQUALITY(basis->requiresOrientations(), false);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 3, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:3");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 64);
+      TEST_EQUALITY(basis->requiresOrientations(), true);
+
+      basis = Teuchos::rcp(new PureBasis("HVol_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HVol_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HVOL);
+      TEST_EQUALITY(basis->cardinality(), 27);
+
+      basis = Teuchos::rcp(new PureBasis("HCurl_Bernstein", 1, cell_data));
+      TEST_EQUALITY(basis->name(), "HCurl_Bernstein:1");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HCURL);
+      TEST_EQUALITY(basis->cardinality(), 12);
+
+      basis = Teuchos::rcp(new PureBasis("HDiv_Bernstein", 1, cell_data));
+      TEST_EQUALITY(basis->name(), "HDiv_Bernstein:1");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HDIV);
+      TEST_EQUALITY(basis->cardinality(), 6);
+    }
+
+    // Wedge (HGrad_Bernstein, HVol_Bernstein)
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Wedge<6> >()));
+      const panzer::CellData cell_data(num_cells, topo);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 18);
+      TEST_EQUALITY(basis->requiresOrientations(), false);
+
+      basis = Teuchos::rcp(new PureBasis("HGrad_Bernstein", 3, cell_data));
+      TEST_EQUALITY(basis->name(), "HGrad_Bernstein:3");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HGRAD);
+      TEST_EQUALITY(basis->cardinality(), 40);
+      TEST_EQUALITY(basis->requiresOrientations(), true);
+
+      basis = Teuchos::rcp(new PureBasis("HVol_Bernstein", 2, cell_data));
+      TEST_EQUALITY(basis->name(), "HVol_Bernstein:2");
+      TEST_EQUALITY(basis->getElementSpace(), PureBasis::HVOL);
+      TEST_EQUALITY(basis->cardinality(), 18);
+    }
   }
 
   TEUCHOS_UNIT_TEST(basis, deprecated_bases)
