@@ -157,7 +157,7 @@ DOFDiv(const PHX::FieldTag & input,
   , id_(id)
   , dof_value(input)
 {
-  TEUCHOS_ASSERT(bd.getType()=="HDiv");
+  TEUCHOS_ASSERT(bd.getType()=="HDiv" || bd.getType()=="HDiv_Bernstein" || bd.getType()=="HDiv:Bernstein");
 
   // build dof_div
   dof_div = output;
@@ -258,7 +258,7 @@ DOFDiv(const PHX::FieldTag & input,
   , id_(id)
   , dof_value(input)
 {
-  TEUCHOS_ASSERT(bd.getType()=="HDiv");
+  TEUCHOS_ASSERT(bd.getType()=="HDiv" || bd.getType()=="HDiv_Bernstein" || bd.getType()=="HDiv:Bernstein");
 
   // build dof_div
   dof_div = output;

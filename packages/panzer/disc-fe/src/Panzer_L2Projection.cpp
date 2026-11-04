@@ -116,7 +116,15 @@ namespace panzer {
 
     const int fieldIndex = targetGlobalIndexer_->getFieldNum(targetBasisDescriptor_.getType());
 
-    const bool is_scalar = targetBasisDescriptor_.getType()=="HGrad" || targetBasisDescriptor_.getType()=="Const" || targetBasisDescriptor_.getType()=="HVol";
+    const bool is_scalar = targetBasisDescriptor_.getType()=="HGrad" ||
+                           targetBasisDescriptor_.getType()=="HGrad_Bernstein" ||
+                           targetBasisDescriptor_.getType()=="Bernstein" ||
+                           targetBasisDescriptor_.getType()=="HGrad:Bernstein" ||
+                           targetBasisDescriptor_.getType()=="Const" ||
+                           targetBasisDescriptor_.getType()=="HVol" ||
+                           targetBasisDescriptor_.getType()=="HVol_Bernstein" ||
+                           targetBasisDescriptor_.getType()=="HVol:Bernstein" ||
+                           targetBasisDescriptor_.getType()=="DG_Bernstein";
 
     // Loop over element blocks and fill mass matrix
     if(is_scalar){
@@ -513,7 +521,15 @@ namespace panzer {
         PHX::View<const double***> sourceUnweightedScalarBasis;
         PHX::View<const double****> sourceUnweightedVectorBasis;
         bool useRankThreeBasis = false; // default to gradient or vector basis
-        if ( (sourceBasisDescriptor.getType() == "HGrad") || (sourceBasisDescriptor.getType() == "Const") || (sourceBasisDescriptor.getType() == "HVol") ) {
+        if ( (sourceBasisDescriptor.getType() == "HGrad") ||
+             (sourceBasisDescriptor.getType() == "HGrad_Bernstein") ||
+             (sourceBasisDescriptor.getType() == "Bernstein") ||
+             (sourceBasisDescriptor.getType() == "HGrad:Bernstein") ||
+             (sourceBasisDescriptor.getType() == "Const") ||
+             (sourceBasisDescriptor.getType() == "HVol") ||
+             (sourceBasisDescriptor.getType() == "HVol_Bernstein") ||
+             (sourceBasisDescriptor.getType() == "HVol:Bernstein") ||
+             (sourceBasisDescriptor.getType() == "DG_Bernstein") ) {
           if (directionIndex == -1) { // Project dof value
             sourceUnweightedScalarBasis = sourceBasisValues.getBasisValues(false).get_static_view();
             useRankThreeBasis = true;

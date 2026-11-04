@@ -49,6 +49,8 @@
 #include "Intrepid2_HDIV_HEX_I1_FEM.hpp"
 #include "Intrepid2_HDIV_HEX_In_FEM.hpp"
 
+#include "Intrepid2_BernsteinBasisFamily.hpp"
+
 
 namespace panzer {
 
@@ -193,6 +195,56 @@ namespace panzer {
 
     else if ( (basis_type == "HGrad") && (cell_type == "Line") && (basis_order >= 2) )
       basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_LINE_Cn_FEM<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+
+    else if ( (basis_type == "HGrad_Bernstein" || basis_type == "Bernstein" || basis_type == "HGrad:Bernstein") && (basis_order >= 1) )
+    {
+      if (cell_type == "Hexahedron")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_HEX_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Tetrahedron")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_TET_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Wedge")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_WEDGE_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Quadrilateral")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_QUAD_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Triangle")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_TRI_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Line")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HGRAD_LINE_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+    }
+
+    else if ( (basis_type == "HVol_Bernstein" || basis_type == "HVol:Bernstein" || basis_type == "DG_Bernstein") && (basis_order >= 0) )
+    {
+      if (cell_type == "Hexahedron")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HVOL_HEX_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Tetrahedron")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HVOL_TET_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Wedge")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HVOL_WEDGE_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Quadrilateral")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HVOL_QUAD_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Triangle")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HVOL_TRI_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+      else if (cell_type == "Line")
+        basis = Teuchos::rcp( new Intrepid2::Basis_HVOL_LINE_Cn_FEM_BERNSTEIN<DeviceType,OutputValueType,PointValueType>(basis_order, point_type) );
+    }
+
+    else if ( (basis_type == "HCurl_Bernstein" || basis_type == "HCurl:Bernstein") && (basis_order >= 1) )
+    {
+      using Family = Intrepid2::BernsteinBasisFamily<DeviceType,OutputValueType,PointValueType>;
+      if (cell_type == "Hexahedron")
+        basis = Teuchos::rcp( new typename Family::HCURL_HEX(basis_order, point_type) );
+      else if (cell_type == "Quadrilateral")
+        basis = Teuchos::rcp( new typename Family::HCURL_QUAD(basis_order, point_type) );
+    }
+
+    else if ( (basis_type == "HDiv_Bernstein" || basis_type == "HDiv:Bernstein") && (basis_order >= 1) )
+    {
+      using Family = Intrepid2::BernsteinBasisFamily<DeviceType,OutputValueType,PointValueType>;
+      if (cell_type == "Hexahedron")
+        basis = Teuchos::rcp( new typename Family::HDIV_HEX(basis_order, point_type) );
+      else if (cell_type == "Quadrilateral")
+        basis = Teuchos::rcp( new typename Family::HDIV_QUAD(basis_order, point_type) );
+    }
 
     TEUCHOS_TEST_FOR_EXCEPTION(Teuchos::is_null(basis), std::runtime_error,
                                "Failed to create the requestedbasis with basis_type=\"" << basis_type <<

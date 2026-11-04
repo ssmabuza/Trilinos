@@ -154,7 +154,10 @@ DOFGradient(const PHX::FieldTag & input,
   , dof_gradient(output)
 {
   // Verify that this basis supports the gradient operation
-  TEUCHOS_TEST_FOR_EXCEPTION(bd_.getType()!="HGrad",std::logic_error,
+  TEUCHOS_TEST_FOR_EXCEPTION(bd_.getType()!="HGrad" &&
+                             bd_.getType()!="HGrad_Bernstein" &&
+                             bd_.getType()!="Bernstein" &&
+                             bd_.getType()!="HGrad:Bernstein",std::logic_error,
                              "DOFGradient: Basis of type \"" << bd_.getType() << "\" does not support GRAD");
 
   this->addEvaluatedField(dof_gradient);

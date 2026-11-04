@@ -84,15 +84,19 @@ void panzer::PureBasis::initialize(const std::string & in_basis_type,const int i
   field_basis_name_D1_ = "Grad Basis: " + basis_name_;
   field_basis_name_D2_ = "D2 Basis: " + basis_name_;
 
-  if(  basis_type_ == "HGrad")
+  if(  basis_type_ == "HGrad" || basis_type_ == "HGrad_Bernstein" ||
+       basis_type_ == "Bernstein" || basis_type_ == "HGrad:Bernstein")
     element_space_ = HGRAD;
-  else if(basis_type_=="HCurl")
+  else if(basis_type_=="HCurl" || basis_type_=="HCurl_Bernstein" ||
+          basis_type_=="HCurl:Bernstein")
     element_space_ = HCURL;
-  else if(basis_type_=="HDiv")
+  else if(basis_type_=="HDiv" || basis_type_=="HDiv_Bernstein" ||
+          basis_type_=="HDiv:Bernstein")
     element_space_ = HDIV;
   else if(basis_type_=="Const")
     element_space_ = CONST;
-  else if(basis_type_=="HVol")
+  else if(basis_type_=="HVol" || basis_type_=="HVol_Bernstein" ||
+          basis_type_=="HVol:Bernstein" || basis_type_=="DG_Bernstein")
     element_space_ = HVOL;
   else { TEUCHOS_TEST_FOR_EXCEPTION(true,std::invalid_argument,
 				    "PureBasis::initializeIntrospection - Invalid basis name \"" 

@@ -193,7 +193,9 @@ namespace panzer
     using std::string;
 
     // Ensure the input makes sense.
-    TEUCHOS_TEST_FOR_EXCEPTION(bd_.getType() != "HCurl", logic_error,
+    TEUCHOS_TEST_FOR_EXCEPTION(bd_.getType() != "HCurl" &&
+      bd_.getType() != "HCurl_Bernstein" &&
+      bd_.getType() != "HCurl:Bernstein", logic_error,
       "Error:  Integrator_CurlBasisDotVector:  Basis of type \""
       << bd_.getType() << "\" does not support curl.")
     TEUCHOS_TEST_FOR_EXCEPTION(not ((spaceDim == 2) or (spaceDim == 3)),

@@ -988,4 +988,145 @@ namespace panzer {
        }
     }
   }
+
+  TEUCHOS_UNIT_TEST(basis_values, bernstein_quad_and_tri)
+  {
+    typedef panzer::ArrayTraits<double,PHX::MDField<double> >::size_type size_type;
+
+    // 1. Test HGrad_Bernstein degree 2 on Quadrilateral<4>
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Quadrilateral<4> >()));
+
+      const int num_cells = 4;
+      const int base_cell_dimension = 2;
+      const panzer::CellData cell_data(num_cells, topo);
+
+      const int cubature_degree = 4;
+      RCP<IntegrationRule> int_rule = rcp(new IntegrationRule(cubature_degree, cell_data));
+      const int num_qp = int_rule->num_points;
+
+      panzer::IntegrationValues2<double> int_values("prefix_", true);
+      int_values.setupArrays(int_rule);
+
+      const int num_vertices = int_rule->topology->getNodeCount();
+      panzer::MDFieldArrayFactory af("prefix_", true);
+      PHX::MDField<double,Cell,NODE,Dim> node_coordinates =
+        af.buildStaticArray<double,Cell,NODE,Dim>("nc", num_cells, num_vertices, base_cell_dimension);
+
+      auto node_coordinates_host = Kokkos::create_mirror_view(node_coordinates.get_static_view());
+      for (size_type cell = 0; cell < node_coordinates.extent(0); ++cell) {
+        int xleft = cell % 2;
+        int yleft = int(cell / 2);
+        node_coordinates_host(cell,0,0) = xleft * 0.5;
+        node_coordinates_host(cell,0,1) = yleft * 0.5;
+        node_coordinates_host(cell,1,0) = (xleft + 1) * 0.5;
+        node_coordinates_host(cell,1,1) = yleft * 0.5;
+        node_coordinates_host(cell,2,0) = (xleft + 1) * 0.5;
+        node_coordinates_host(cell,2,1) = (yleft + 1) * 0.5;
+        node_coordinates_host(cell,3,0) = xleft * 0.5;
+        node_coordinates_host(cell,3,1) = (yleft + 1) * 0.5;
+      }
+      Kokkos::deep_copy(node_coordinates.get_static_view(), node_coordinates_host);
+      int_values.evaluateValues(node_coordinates);
+
+      RCP<panzer::BasisIRLayout> basis = rcp(new panzer::BasisIRLayout("HGrad_Bernstein", 2, *int_rule));
+      TEST_EQUALITY(basis->cardinality(), 9);
+      TEST_EQUALITY(basis->getIntrepid2Basis()->requireOrientation(), false);
+
+      panzer::BasisValues2<double> basis_values("", true, true);
+      basis_values.setupArrays(basis);
+      basis_values.evaluateValues(int_values.cub_points,
+                                  int_values.jac,
+                                  int_values.jac_det,
+                                  int_values.jac_inv,
+                                  int_values.weighted_measure,
+                                  node_coordinates);
+
+      auto basis_scalar_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), basis_values.basis_scalar.get_static_view());
+      auto grad_basis_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), basis_values.grad_basis.get_static_view());
+      for (int cell = 0; cell < num_cells; ++cell) {
+        for (int qp = 0; qp < num_qp; ++qp) {
+          double sum_val = 0.0;
+          double sum_gx = 0.0;
+          double sum_gy = 0.0;
+          for (int b = 0; b < 9; ++b) {
+            TEST_ASSERT(basis_scalar_host(cell, b, qp) >= -1.0e-14);
+            sum_val += basis_scalar_host(cell, b, qp);
+            sum_gx += grad_basis_host(cell, b, qp, 0);
+            sum_gy += grad_basis_host(cell, b, qp, 1);
+          }
+          TEST_FLOATING_EQUALITY(sum_val, 1.0, 1.0e-14);
+          TEST_COMPARE(std::abs(sum_gx), <, 1.0e-13);
+          TEST_COMPARE(std::abs(sum_gy), <, 1.0e-13);
+        }
+      }
+    }
+
+    // 2. Test HGrad_Bernstein degree 3 on Triangle<3>
+    {
+      Teuchos::RCP<shards::CellTopology> topo =
+        Teuchos::rcp(new shards::CellTopology(shards::getCellTopologyData< shards::Triangle<3> >()));
+
+      const int num_cells = 2;
+      const int base_cell_dimension = 2;
+      const panzer::CellData cell_data(num_cells, topo);
+
+      const int cubature_degree = 4;
+      RCP<IntegrationRule> int_rule = rcp(new IntegrationRule(cubature_degree, cell_data));
+      const int num_qp = int_rule->num_points;
+
+      panzer::IntegrationValues2<double> int_values("prefix_", true);
+      int_values.setupArrays(int_rule);
+
+      const int num_vertices = int_rule->topology->getNodeCount();
+      panzer::MDFieldArrayFactory af("prefix_", true);
+      PHX::MDField<double,Cell,NODE,Dim> node_coordinates =
+        af.buildStaticArray<double,Cell,NODE,Dim>("nc_tri", num_cells, num_vertices, base_cell_dimension);
+
+      auto node_coordinates_host = Kokkos::create_mirror_view(node_coordinates.get_static_view());
+      // Cell 0: (0,0)-(1,0)-(0,1), Cell 1: (1,0)-(1,1)-(0,1)
+      node_coordinates_host(0,0,0) = 0.0; node_coordinates_host(0,0,1) = 0.0;
+      node_coordinates_host(0,1,0) = 1.0; node_coordinates_host(0,1,1) = 0.0;
+      node_coordinates_host(0,2,0) = 0.0; node_coordinates_host(0,2,1) = 1.0;
+
+      node_coordinates_host(1,0,0) = 1.0; node_coordinates_host(1,0,1) = 0.0;
+      node_coordinates_host(1,1,0) = 1.0; node_coordinates_host(1,1,1) = 1.0;
+      node_coordinates_host(1,2,0) = 0.0; node_coordinates_host(1,2,1) = 1.0;
+      Kokkos::deep_copy(node_coordinates.get_static_view(), node_coordinates_host);
+      int_values.evaluateValues(node_coordinates);
+
+      RCP<panzer::BasisIRLayout> basis = rcp(new panzer::BasisIRLayout("HGrad_Bernstein", 3, *int_rule));
+      TEST_EQUALITY(basis->cardinality(), 10);
+      TEST_EQUALITY(basis->getIntrepid2Basis()->requireOrientation(), true);
+
+      panzer::BasisValues2<double> basis_values("", true, true);
+      basis_values.setupArrays(basis);
+      basis_values.evaluateValues(int_values.cub_points,
+                                  int_values.jac,
+                                  int_values.jac_det,
+                                  int_values.jac_inv,
+                                  int_values.weighted_measure,
+                                  node_coordinates);
+
+      auto basis_scalar_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), basis_values.basis_scalar.get_static_view());
+      auto grad_basis_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), basis_values.grad_basis.get_static_view());
+      for (int cell = 0; cell < num_cells; ++cell) {
+        for (int qp = 0; qp < num_qp; ++qp) {
+          double sum_val = 0.0;
+          double sum_gx = 0.0;
+          double sum_gy = 0.0;
+          for (int b = 0; b < 10; ++b) {
+            TEST_ASSERT(basis_scalar_host(cell, b, qp) >= -1.0e-14);
+            sum_val += basis_scalar_host(cell, b, qp);
+            sum_gx += grad_basis_host(cell, b, qp, 0);
+            sum_gy += grad_basis_host(cell, b, qp, 1);
+          }
+          TEST_FLOATING_EQUALITY(sum_val, 1.0, 1.0e-14);
+          TEST_COMPARE(std::abs(sum_gx), <, 1.0e-13);
+          TEST_COMPARE(std::abs(sum_gy), <, 1.0e-13);
+        }
+      }
+    }
+  }
 }
